@@ -3,11 +3,12 @@
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![PySide6](https://img.shields.io/badge/PySide6-6.4+-green.svg)](https://pypi.org/project/PySide6/)
 [![OpenCV](https://img.shields.io/badge/OpenCV-4.8+-orange.svg)](https://opencv.org/)
+[![YOLO](https://img.shields.io/badge/YOLO-v8+-red.svg)](https://github.com/ultralytics/ultralytics)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-基于 Python + PySide6 的 YOLO 格式数据集标注工具，具备 LabelImg 的所有核心功能，并集成了传统图形学辅助标注功能，提升标注效率。
+基于 Python + PySide6 的 YOLO 格式数据集标注工具，具备 LabelImg 的所有核心功能，并集成了传统图形学辅助标注和 YOLO 深度学习智能识别功能，大幅提升标注效率。
 
-[功能特性](#功能特性) • [安装](#安装) • [使用](#使用) 
+[功能特性](#功能特性) • [安装](#安装) • [使用](#使用) • [YOLO智能识别](#yolo智能识别)
 
 ---
 
@@ -43,6 +44,7 @@
 | MSER提取 | MSER | 提取最大稳定极值区域 |
 | Otsu二值化 | Otsu | 自动阈值分割 |
 | GrabCut前景 | GrabCut | 前景背景分割 |
+| YOLO智能识别 | YOLOv8 | 深度学习目标检测自动标注 |
 
 ### 配置管理
 
@@ -129,7 +131,7 @@ python main.py
 
 ### 使用辅助标注
 
-1. 在左侧面板选择检测模式（边缘检测/颜色分割/显著性检测/MSER提取/Otsu二值化/GrabCut前景）
+1. 在左侧面板选择检测模式（边缘检测/颜色分割/显著性检测/MSER提取/Otsu二值化/GrabCut前景/YOLO智能识别）
 2. 调整参数配置（如Canny阈值、聚类数等）
 3. 点击"执行辅助标注"按钮
 4. 系统自动生成候选框
@@ -141,6 +143,36 @@ python main.py
 2. 在对话框中调整各算法参数
 3. 选择保存路径，将配置保存为 YAML 文件
 4. 点击"加载配置"可快速应用已有配置
+
+---
+
+## YOLO智能识别
+
+### 功能说明
+
+YOLO智能识别功能利用深度学习模型自动检测图像中的目标，并生成标注框，大幅提升标注效率。
+
+### 模型准备
+
+1. **准备模型文件**：将训练好的YOLO模型权重文件（.pt格式）放入项目根目录的 `model` 文件夹中
+2. **支持的模型**：YOLOv8及以上版本（通过Ultralytics库支持）
+3. **自动加载**：如果 `model` 文件夹中有多个模型文件，系统会自动使用第一个找到的.pt文件
+
+### 使用方法
+
+1. 在左侧面板选择"YOLO智能识别"模式
+2. 模型路径可以留空，系统会自动查找 `model` 文件夹中的模型
+3. 也可以点击"浏览"按钮手动选择模型文件
+4. 调整"最小面积"参数过滤掉过小的检测框
+5. 点击"执行辅助标注"按钮，系统将自动检测并生成标注框
+
+### 模型训练
+
+如果您需要训练自己的YOLO模型，可以参考以下资源：
+- [Ultralytics YOLO 官方文档](https://docs.ultralytics.com/)
+- [YOLOv8 训练教程](https://docs.ultralytics.com/modes/train/)
+
+训练完成后，将生成的 `.pt` 权重文件放入 `model` 文件夹即可使用。
 
 ---
 
@@ -172,6 +204,7 @@ yolo-annotator/
 ├── config.py               # 配置文件
 ├── LICENSE                 # 许可证文件
 ├── readme.md               # 项目说明
+├── model/                  # YOLO模型文件夹（存放.pt权重文件）
 ├── resources/              # 资源文件夹
 │   └── logo.ico            # 应用程序图标
 ├── config/                 # 配置文件夹
@@ -196,7 +229,8 @@ yolo-annotator/
 │   ├── saliency_detector.py # 显著性检测
 │   ├── mser_detector.py    # MSER提取
 │   ├── otsu_detector.py    # Otsu二值化
-│   └── grabcut_detector.py # GrabCut前景分割
+│   ├── grabcut_detector.py # GrabCut前景分割
+│   └── yolo_detector.py    # YOLO智能识别
 └── utils/                  # 工具模块
     └── helpers.py
 ```
@@ -208,6 +242,7 @@ yolo-annotator/
 - **GUI 框架**：PySide6
 - **图像处理**：OpenCV
 - **数值计算**：NumPy
+- **深度学习**：Ultralytics YOLO
 - **配置解析**：PyYAML
 
 ---

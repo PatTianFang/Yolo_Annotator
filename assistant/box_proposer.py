@@ -7,6 +7,7 @@ from .saliency_detector import detect_saliency
 from .mser_detector import detect_mser
 from .otsu_detector import detect_otsu
 from .grabcut_detector import detect_grabcut
+from .yolo_detector import detect_yolo
 
 def non_max_suppression_fast(boxes, overlapThresh):
     """快速 NMS 非极大值抑制"""
@@ -69,31 +70,53 @@ def propose_boxes(image, mode='edge', min_area=400, nms_threshold=0.3, **kwargs)
         iter_count = kwargs.get('grabcut_iter', 5)
         margin = kwargs.get('grabcut_margin', 10)
         raw_boxes = detect_grabcut(image, iter_count=iter_count, margin=margin)
+    elif mode == 'yolo':
+        model_path = kwargs.get('yolo_model_path', '')
+        conf_threshold = kwargs.get('yolo_conf_threshold', 0.4)
+        raw_boxes = detect_yolo(image, model_path, conf_threshold=conf_threshold)
     else:
         raw_boxes = []
 
     # 过滤小面积和计算 [x1, y1, x2, y2]
     filtered_boxes = []
-    for (x, y, w, h) in raw_boxes:
+    class_ids = []  # 存储YOLO返回的类别ID
+    for box in raw_boxes:
+        # 处理不同格式的边界框
+        if len(box) == 4:
+            # 传统方法返回的格式: (x, y, w, h)
+            x, y, w, h = box
+            class_id = 0  # 默认为0
+        elif len(box) == 6:
+            # YOLO返回的格式: (x, y, w, h, class_id, conf)
+            x, y, w, h, class_id, _ = box
+        else:
+            continue
+        
         if w * h > min_area:
             filtered_boxes.append([x, y, x + w, y + h])
+            class_ids.append(class_id)
 
     if not filtered_boxes:
         return []
 
-    # NMS
-    filtered_boxes = np.array(filtered_boxes)
-    nms_boxes = non_max_suppression_fast(filtered_boxes, nms_threshold)
+    # YOLO模式跳过NMS处理（YOLO模型已内置NMS）
+    if mode != 'yolo':
+        # NMS
+        filtered_boxes = np.array(filtered_boxes)
+        nms_boxes = non_max_suppression_fast(filtered_boxes, nms_threshold)
+    else:
+        nms_boxes = np.array(filtered_boxes, dtype=int)
 
     annotations = []
-    for (x1, y1, x2, y2) in nms_boxes:
+    for i, (x1, y1, x2, y2) in enumerate(nms_boxes):
         # 转为中心坐标归一化
         w = (x2 - x1) / img_w
         h = (y2 - y1) / img_h
         x_c = (x1 + x2) / 2 / img_w
         y_c = (y1 + y2) / 2 / img_h
         
-        # 默认使用 class_id = 0
-        annotations.append(AnnotationItem(0, x_c, y_c, w, h))
+        # 使用存储的类别ID（默认为0）
+        class_id = class_ids[i] if i < len(class_ids) else 0
+        annotations.append(AnnotationItem(class_id, x_c, y_c, w, h))
         
     return annotations

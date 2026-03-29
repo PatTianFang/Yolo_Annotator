@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QSpinBox, QDoubleSpinBox, QComboBox, QPushButton, QGroupBox
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QSpinBox, QDoubleSpinBox, QComboBox, QPushButton, QGroupBox, QLineEdit, QFileDialog
 from PySide6.QtCore import Qt, Signal
 import config
 
@@ -15,7 +15,7 @@ class AssistantPanel(QWidget):
 
         # 模式选择
         self.combo_mode = QComboBox()
-        self.combo_mode.addItems(["边缘检测", "颜色分割", "显著性检测", "MSER提取", "Otsu二值化", "GrabCut前景"])
+        self.combo_mode.addItems(["边缘检测", "颜色分割", "显著性检测", "MSER提取", "Otsu二值化", "GrabCut前景", "YOLO智能识别"])
         self.combo_mode.currentIndexChanged.connect(self.on_mode_changed)
         
         mode_layout = QFormLayout()
@@ -59,6 +59,17 @@ class AssistantPanel(QWidget):
         self.spin_grabcut_margin = QSpinBox()
         self.spin_grabcut_margin.setRange(config.GRABCUT_MARGIN_MIN, config.GRABCUT_MARGIN_MAX)
         self.spin_grabcut_margin.setValue(config.GRABCUT_MARGIN)
+        
+        # -- YOLO 参数 --
+        self.line_yolo_model = QLineEdit()
+        self.line_yolo_model.setPlaceholderText("请选择YOLO模型权重文件 (.pt)")
+        self.btn_browse_model = QPushButton("浏览")
+        self.btn_browse_model.clicked.connect(self.browse_yolo_model)
+        
+        self.double_yolo_conf = QDoubleSpinBox()
+        self.double_yolo_conf.setRange(0.0, 1.0)
+        self.double_yolo_conf.setValue(config.YOLO_CONF_THRESHOLD)
+        self.double_yolo_conf.setSingleStep(0.1)
         
         # -- 通用参数 --
         self.spin_min_area = QSpinBox()
@@ -104,10 +115,15 @@ class AssistantPanel(QWidget):
         elif mode == "GrabCut前景":
             self.form_params.addRow("迭代次数:", self.spin_grabcut_iter)
             self.form_params.addRow("边缘留白:", self.spin_grabcut_margin)
+        elif mode == "YOLO智能识别":
+            self.form_params.addRow("模型路径:", self.line_yolo_model)
+            self.form_params.addRow(" ", self.btn_browse_model)
+            self.form_params.addRow("置信度阈值:", self.double_yolo_conf)
             
-        # 通用参数始终显示
+        # 通用参数始终显示（YOLO模式不显示NMS阈值）
         self.form_params.addRow("最小面积:", self.spin_min_area)
-        self.form_params.addRow("NMS阈值:", self.double_nms)
+        if mode != "YOLO智能识别":
+            self.form_params.addRow("NMS阈值:", self.double_nms)
 
     def on_run_clicked(self):
         mode_text = self.combo_mode.currentText()
@@ -117,7 +133,8 @@ class AssistantPanel(QWidget):
             "显著性检测": "saliency",
             "MSER提取": "mser",
             "Otsu二值化": "otsu",
-            "GrabCut前景": "grabcut"
+            "GrabCut前景": "grabcut",
+            "YOLO智能识别": "yolo"
         }
         
         params = {
@@ -129,7 +146,27 @@ class AssistantPanel(QWidget):
             "mser_delta": self.spin_mser_delta.value(),
             "otsu_blur": self.spin_otsu_blur.value(),
             "grabcut_iter": self.spin_grabcut_iter.value(),
-            "grabcut_margin": self.spin_grabcut_margin.value()
+            "grabcut_margin": self.spin_grabcut_margin.value(),
+            "yolo_model_path": self.line_yolo_model.text(),
+            "yolo_conf_threshold": self.double_yolo_conf.value()
         }
         
         self.run_requested.emit(mode_map.get(mode_text, "edge"), params)
+    
+    def browse_yolo_model(self):
+        """浏览选择YOLO模型文件"""
+        import os
+        # 获取项目根目录下的model文件夹路径
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        model_dir = os.path.join(project_root, "model")
+        
+        file_dialog = QFileDialog()
+        file_dialog.setFileMode(QFileDialog.ExistingFile)
+        file_dialog.setNameFilter("YOLO模型文件 (*.pt)")
+        # 设置默认打开model文件夹（如果存在）
+        if os.path.exists(model_dir):
+            file_dialog.setDirectory(model_dir)
+        if file_dialog.exec():
+            selected_files = file_dialog.selectedFiles()
+            if selected_files:
+                self.line_yolo_model.setText(selected_files[0])

@@ -196,6 +196,12 @@ class MainWindow(QMainWindow):
             if "GRABCUT_MARGIN" in config_data:
                 panel.spin_grabcut_margin.setValue(config_data["GRABCUT_MARGIN"])
             
+            # YOLO参数
+            if "YOLO_MODEL_PATH" in config_data:
+                panel.line_yolo_model.setText(config_data["YOLO_MODEL_PATH"])
+            if "YOLO_CONF_THRESHOLD" in config_data:
+                panel.double_yolo_conf.setValue(config_data["YOLO_CONF_THRESHOLD"])
+            
             # 通用参数
             if "BOX_MIN_AREA" in config_data:
                 panel.spin_min_area.setValue(config_data["BOX_MIN_AREA"])

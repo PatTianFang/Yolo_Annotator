@@ -80,6 +80,10 @@ class ConfigDialog(QDialog):
         self.tab_grabcut = self.create_grabcut_tab()
         self.tabs.addTab(self.tab_grabcut, "GrabCut")
         
+        # YOLO参数
+        self.tab_yolo = self.create_yolo_tab()
+        self.tabs.addTab(self.tab_yolo, "YOLO")
+        
         # 通用参数
         self.tab_general = self.create_general_tab()
         self.tabs.addTab(self.tab_general, "通用参数")
@@ -198,6 +202,23 @@ class ConfigDialog(QDialog):
         
         return widget
     
+    def create_yolo_tab(self):
+        """YOLO参数标签页"""
+        widget = QWidget()
+        form = QFormLayout(widget)
+        
+        self.line_yolo_model = QLineEdit()
+        self.line_yolo_model.setPlaceholderText("留空则自动使用model文件夹中的模型")
+        form.addRow("模型路径:", self.line_yolo_model)
+        
+        self.double_yolo_conf = QDoubleSpinBox()
+        self.double_yolo_conf.setRange(0.0, 1.0)
+        self.double_yolo_conf.setValue(0.4)
+        self.double_yolo_conf.setSingleStep(0.1)
+        form.addRow("置信度阈值:", self.double_yolo_conf)
+        
+        return widget
+    
     def create_general_tab(self):
         """通用参数标签页"""
         widget = QWidget()
@@ -259,6 +280,9 @@ class ConfigDialog(QDialog):
             "GRABCUT_ITER_COUNT": self.spin_grabcut_iter.value(),
             "GRABCUT_MARGIN": self.spin_grabcut_margin.value(),
             "GRABCUT_MORPH_KERNEL_SIZE": self.spin_grabcut_morph.value(),
+            # YOLO
+            "YOLO_MODEL_PATH": self.line_yolo_model.text(),
+            "YOLO_CONF_THRESHOLD": self.double_yolo_conf.value(),
             # 通用参数
             "BOX_MIN_AREA": self.spin_min_area.value(),
             "BOX_NMS_THRESHOLD": self.double_nms.value(),
